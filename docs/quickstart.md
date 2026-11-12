@@ -1,10 +1,10 @@
-# 快速入门
+# Quick start
 
-[首页](../README.md) · [安装](installation.md) · [函数参考](reference.md)
+[Home](../README.md) · [Installation](installation.md) · [Function reference](reference.md)
 
-下面用包内模拟数据完成选区、注释、FOV 质控、邻域分析和热饼图。可在安装后直接运行。
+Use the bundled simulated data to select a tissue region, phenotype cells, apply FOV-level quality control, analyse cellular neighbourhoods, and draw a heat-pie map.
 
-## 1. 按选区和规则注释细胞
+## 1. Select a region and assign cell phenotypes
 
 ```r
 library(cellfiers)
@@ -26,7 +26,7 @@ summarize_celltypes(cells)
 plot_proportions(cells)
 ```
 
-## 2. 栅格化和质控
+## 2. Assign cells to FOVs and apply quality control
 
 ```r
 centres <- c("cDC", "cDC(Mature/Active)")
@@ -38,9 +38,9 @@ plot_qc_summary(qc$qc)
 clean <- qc$data_final
 ```
 
-这里用 `probs = c(0, 1)` 保留通过初筛的模拟 FOV。实际数据可按项目的质控方案设定分位数。质控结果保存在 `qc$qc`，通过质控的细胞在 `qc$data_final`。
+With `probs = c(0, 1)`, the quantile filter retains all simulated FOVs that pass the initial QC filters. Choose quantiles appropriate to your study. Inspect `qc$qc` for the FOV-level QC results and use `qc$data_final` to access cells in retained FOVs.
 
-## 3. 比较中心细胞的邻居组成
+## 3. Compare cellular neighbourhood composition between groups
 
 ```r
 neighbors <- analyze_neighbors(clean, radius = 20, center_types = centres)
@@ -49,9 +49,9 @@ tests <- compare_neighbors(grouped, analysis_level = "sample")
 plot_neighbors(grouped, tests, geom = "boxplot")
 ```
 
-`analyze_neighbors()` 在 FOV 内搜索并汇总邻居。`compare_neighbors()` 可按生物样本汇总后检验，也可做探索性的 FOV 级 Wilcoxon 检验或整样本标签置换。模拟数据的组间结果仅用于展示接口。
+`analyze_neighbors()` searches for neighbours within each FOV. `compare_neighbors()` supports sample-level inference, exploratory FOV-level Wilcoxon testing, and permutation of group labels at the biological-sample level. The group comparison illustrates the interface using simulated data.
 
-## 4. 计算指定目标细胞的邻域并出图
+## 4. Quantify target-cell neighbourhoods and draw a heat-pie map
 
 ```r
 one_sample <- clean[clean$sample_id == "C1001", ]
@@ -66,14 +66,14 @@ p <- plot_heatpie(result)
 p
 ```
 
-`target_neighbors()` 一次处理一个生物样本，样本内搜索可跨 FOV 边界，再把结果按中心细胞所属 FOV 汇总。半径和网格边长都以 µm 为单位。热饼图的底色为每个 FOV 内中心细胞的平均目标类型数，扇区为加权目标组成，饼图面积为每个中心细胞的平均加权目标丰度。一个目标细胞同时出现在 `m` 个中心细胞的邻域时，每条边贡献 `1/m`。
+`target_neighbors()` processes one biological sample at a time. Its search can cross FOV boundaries within the sample, and results are aggregated by the FOV containing each centre cell. The search radius and grid side length are in micrometres. Tile shading represents mean target cell-type richness per centre cell. Pie sectors show weighted target cell-type composition, and pie area represents mean weighted target-cell abundance per centre cell. When a target cell is shared by `m` centre cells, inverse-degree weighting assigns `1/m` to each centre–target pair.
 
-## 换成自己的数据
+## Use your own data
 
-QuPath 导出时保留区域列（默认 `Parent`）、细胞质心坐标及荧光强度。确认坐标以 µm 记录，并将阈值表中的标记物逐个映射到正确的荧光测量列。规则表每行一个细胞类型，标记物列取值为 `+`、`-` 或 `NA`。规则按行匹配，首次命中的类型生效。
+Retain the region label (by default, `Parent`), cell centroid coordinates, and fluorescence intensities in your QuPath export. Verify that the coordinates are in micrometres and map each marker in the threshold table to the corresponding measurement column. Specify one cell type per row of the rule table, with marker requirements recorded as `+`, `-`, or `NA`. The first matching rule determines the phenotype.
 
 ```r
-# 改成自己的路径、样本编号、选区名称和通道映射。
+# Set your file paths, sample ID, region name, and marker-to-channel mapping.
 cells <- read_qupath("path/to/qupath_export.txt", sample_id = "S01")
 cutoffs <- read_cutoffs("path/to/cutoffs.tsv")
 rules <- read_rules("path/to/rules.tsv")
@@ -82,4 +82,4 @@ annotated <- run_annotation(
 )
 ```
 
-批量导入 TSV 用 `read_qupath_batch()`。若 QuPath 导出为 CSV，可用 `readr::read_csv()`，补齐 `sample_id` 和样本内唯一的 `cell_id` 后传入 `run_annotation()`。按样本检查注释和 QC，再选择中心细胞、目标细胞和半径。输出的 ggplot 图可用 `ggplot2::ggsave()` 保存为 PNG 或 PDF。
+Use `read_qupath_batch()` for multiple TSV exports. For a CSV export, import it with `readr::read_csv()` and supply `sample_id` and a `cell_id` unique within each sample before calling `run_annotation()`. Review phenotyping and QC by sample before choosing centre and target cell types and the search radius. Use `ggplot2::ggsave()` to save figures as PNG or PDF.

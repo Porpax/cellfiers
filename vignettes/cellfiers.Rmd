@@ -1,10 +1,10 @@
 ---
-title: "cellfiers：QuPath mIF 细胞注释、质控与空间邻居分析"
+title: "cellfiers: Cell phenotyping, quality control, and spatial neighbourhood analysis of QuPath mIF data"
 author: "cellfiers"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{cellfiers：QuPath mIF 细胞注释、质控与空间邻居分析}
+  %\VignetteIndexEntry{cellfiers: Cell phenotyping, quality control, and spatial neighbourhood analysis of QuPath mIF data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -13,57 +13,57 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 8, fig.height = 6)
 ```
 
-本教程演示 `cellfiers` 的完整流程。细胞类型始终由规则表决定；绘图外观则
-复现项目中的 `mIF_Tzone_02` 和 `mIF_Tzone_05`，两者互不混淆。流程包含：
+This vignette presents the cellfiers workflow. The rule table defines cell phenotypes.
+Selected plots follow the style of the original `mIF_Tzone_02` and `mIF_Tzone_05` scripts.
 
-1. 读取 QuPath 导出的细胞分类文件；
-2. 按组织区域（Parent）筛选目标细胞；
-3. 按每个样本的荧光通道阈值把标记物判读为 `+` / `-`；
-4. 按注释规则表把每个细胞归类为细胞类型；
-5. FOV 栅格化与数据质控；
-6. 指定半径内的中心细胞邻居分析；
-7. 按原项目样式输出正式图形。
+1. Import single-cell classification exports from QuPath.
+2. Select cells by tissue region using the `Parent` column.
+3. Call marker positivity with sample-specific fluorescence thresholds.
+4. Assign cell phenotypes using a rule table.
+5. Assign cells to fields of view (FOVs) and apply quality control.
+6. Analyse cellular neighbourhoods within a specified radius.
+7. Visualise and compare the results.
 
-## 加载包与示例数据
+## Load the package and example data
 
 ```{r}
 library(cellfiers)
 library(dplyr)
 
-data(mif_cells)     # 450 个细胞的 QuPath 风格数据（3 个样本）
-data(mif_cutoffs)   # 每样本 6 个通道的阈值
-data(mif_rules)     # 细胞类型注释规则表
+data(mif_cells)     # QuPath-style measurements for 450 cells from three samples
+data(mif_cutoffs)   # Sample-specific thresholds for six markers
+data(mif_rules)     # Cell phenotyping rules
 glimpse(mif_cells)
 ```
 
-## 1. 读取 QuPath 导出文件
+## 1. Import QuPath exports
 
-`read_qupath()` 读取单个文件并自动添加 `sample_id` 与 `cell_id` 列；默认从文件名中提取样本号（如 `Shanxi_SLN_C2309160.txt` -> `C2309160`）。
+`read_qupath()` reads one file and adds `sample_id` and `cell_id`. By default, it derives the sample identifier from the file name, for example `C2309160` from `Shanxi_SLN_C2309160.txt`.
 
 ```{r, eval = FALSE}
 cells <- read_qupath("classfy_data/Shanxi_SLN_C2309160.txt")
 ```
 
-`read_qupath_batch()` 批量读取整个目录：
+`read_qupath_batch()` imports multiple exports from a directory.
 
 ```{r, eval = FALSE}
 cells <- read_qupath_batch("classfy_data/")
 ```
 
-本教程直接使用包内示例数据 `mif_cells`（已含 `sample_id` / `cell_id`）。
+This vignette uses the bundled simulated data, `mif_cells`, which already contain `sample_id` and `cell_id`.
 
-## 2. 区域筛选
+## 2. Select a tissue region
 
-通常我们只关心某个注释区域（如 `SLN_Tregion`）内的细胞：
+Use the region label to retain cells in the desired annotation, such as `SLN_Tregion`.
 
 ```{r}
 tzone <- filter_region(mif_cells, regions = "SLN_Tregion")
 table(tzone$Parent)
 ```
 
-## 3. 阈值判读：标记物 +/- 
+## 3. Call marker positivity
 
-用「标记物 -> 荧光强度列」的映射，配合每样本阈值表，把强度转换为 `+` / `-`：
+Map marker names to fluorescence measurement columns and apply sample-specific thresholds to classify each marker as positive (`+`) or negative (`-`).
 
 ```{r}
 marker_map <- c(
@@ -76,22 +76,22 @@ pos <- apply_cutoffs(tzone, mif_cutoffs, marker_map)
 select(pos, sample_id, cell_id, CD3, CD8, CD11c) %>% head()
 ```
 
-## 4. 规则注释细胞类型
+## 4. Assign cell phenotypes using rules
 
-规则表的第一列是细胞类型，其余列是该类型对各标记物的要求（`+`/`-`，`NA` 表示不要求）：
+The first column of the rule table lists cell types. The remaining columns specify marker requirements (`+` or `-`). An `NA` entry leaves that marker unconstrained.
 
 ```{r}
 mif_rules
 ```
 
-`annotate_cells()` 按“第一条全匹配规则”给细胞归类，未命中记为 `Other`：
+`annotate_cells()` assigns the first fully matching phenotype. Unmatched cells are labelled `Other`.
 
 ```{r}
 annotated <- annotate_cells(pos, mif_rules)
 table(annotated$CellType)
 ```
 
-也可以用 `run_annotation()` 把第 2-4 步合并为一次调用：
+`run_annotation()` combines steps 2–4 in a single call.
 
 ```{r}
 annotated2 <- run_annotation(
@@ -101,14 +101,14 @@ annotated2 <- run_annotation(
 identical(annotated, annotated2)
 ```
 
-## 5. 汇总
+## 5. Summarise cell phenotypes
 
 ```{r}
 summ <- summarize_celltypes(annotated, levels = mif_rules$CellType)
 summ
 ```
 
-## 6. 批量处理目录
+## 6. Process a directory of exports
 
 ```{r, eval = FALSE}
 annotate_files(
@@ -117,32 +117,32 @@ annotate_files(
   cutoffs = cutoffs_df, rules = rules_df, marker_map = marker_map,
   regions = c("Annotation (SLN_Tregion)", "SLN_Tregion")
 )
-# 输出：每个样本一个 _annotated.csv + celltype_summary.csv
+# Outputs one _annotated.csv per sample and a celltype_summary.csv file.
 ```
 
-## Phase 2：数据质控清洗
+## Phase 2. FOV quality control
 
-在注释结果上继续：先做 FOV 栅格化，再按 FOV 计算质控指标、打标记并清洗。
+Assign annotated cells to FOVs, calculate QC metrics, and retain cells from FOVs that pass the filters.
 
-### 1. FOV 栅格化
+### 1. Assign cells to a grid
 
-`assign_fov()` 把细胞按 200 µm 网格栅格化，用层次聚类识别分离的组织区域
-（相距超过 `min_distance` 的网格属于不同区域），并为每个细胞生成
-`<样本>_TR<区域>_FOV<视野号>` 标签：
+`assign_fov()` uses a 200 µm grid by default. Hierarchical clustering identifies separate tissue regions
+based on the `min_distance` parameter. Each cell receives an FOV identifier
+of the form `<sample>_TR<region>_FOV<number>`.
 
 ```{r fov}
 annotated_fov <- assign_fov(annotated)
 head(annotated_fov$FOV)
-table(gsub("_FOV[0-9]+$", "", annotated_fov$FOV))  # 每个样本的区域数
+table(gsub("_FOV[0-9]+$", "", annotated_fov$FOV))  # FOV counts by sample and region
 ```
 
-### 2. FOV 空间分布
+### 2. Visualise the FOV grid
 
 ```{r fov-plot}
 plot_fov_distribution(annotated_fov)
 ```
 
-### 3. 每 FOV 质控与清洗
+### 3. Apply FOV-level quality control
 
 ```{r qc}
 qc_result <- run_fov_qc(
@@ -157,25 +157,25 @@ head(qc_result$qc)
 table(qc_result$qc$LowCellFlag)
 ```
 
-`LowCellFlag` 依据：某 FOV 细胞数 < 该样本平均细胞数的 1/4 时标记为
+`LowCellFlag` identifies FOVs with fewer than one quarter of the mean FOV cell count for that sample.
 `LowCellNum`。
 
-`HighDCRatioFlag` 依据：默认当 `DC_ratio > 0.70` 时标记为
-`HighDCRatio`。`max_dc_ratio` 可由用户调整，设为 `NULL` 可关闭此规则。
+By default, `HighDCRatioFlag` identifies FOVs with a DC fraction above 0.70.
+Adjust `max_dc_ratio` for your study or set it to `NULL` to disable this filter.
 
-`run_fov_qc()` 严格执行原始顺序：先去除低细胞数 FOV，再根据通过该步骤
-的 FOV 计算 DC_count 分位数。示例使用 `c(0, 1)`，避免小型模拟数据被
-极端分位过滤；真实流程使用默认 `c(0.05, 0.95)`。
+`run_fov_qc()` applies the initial cell count and DC fraction filters before
+estimating quantiles of `DC_count` from the retained FOVs. This example uses
+`c(0, 1)` to retain the full range in the small simulated dataset. The default is `c(0.05, 0.95)`.
 
-### 4. 原始样式质控图
+### 4. Plot QC metrics
 
 ```{r qc-plots}
 plot_dc_count_distribution(qc_result$qc_pass)
 ```
 
-### 5. 清洗
+### 5. Retrieve the filtered data
 
-清洗后的细胞和 QC 表直接由一站式结果取得：
+Retrieve retained cells and the QC table from the workflow output.
 
 ```{r qc-clean}
 fov_final <- qc_result$data_final
@@ -183,28 +183,28 @@ qc_final <- qc_result$qc_final
 c(original = nrow(annotated_fov), after_qc = nrow(fov_final))
 ```
 
-作图前还可以用 IQR 法剔除离群值（可按分组计算边界）：
+Optionally use the interquartile range (IQR) rule to filter outliers before plotting. Bounds can be computed within groups.
 
 ```{r iqr, eval = FALSE}
 fov_final <- remove_outliers_iqr(fov_final, value_col = "DC_ratio",
                                  group_col = "sample_id")
 ```
 
-## Phase 3：比较分析与可视化
+## Phase 3. Neighbourhood analysis and visualisation
 
-### 1. 邻居分析
+### 1. Search for neighbouring cells
 
-`find_neighbors()` 在每 FOV 内用 KD-tree（RANN）搜索半径内的邻居，为每个细胞
-输出各细胞类型的邻居数、总邻居数 `n_neighbors` 与最近邻类型 `nearestNGB`：
+`find_neighbors()` uses a k-d tree via RANN to search within the specified radius in each FOV.
+It reports per-type counts, the total number of neighbours (`n_neighbors`), and the nearest-neighbour type (`nearestNGB`).
 
 ```{r neighbors}
 nb <- find_neighbors(fov_final, radius = 20)
 head(nb[, c("cell_id", "CellType", "n_neighbors", "nearestNGB")])
 ```
 
-### 2. 以 DC 为中心的每 FOV 统计
+### 2. Summarise DC-centred neighbourhoods by FOV
 
-`analyze_neighbors()` 一站式完成：邻居计数 → 每 FOV 汇总 → 最近邻排名。
+`analyze_neighbors()` combines neighbour counting, FOV-level summarisation, and nearest-neighbour ranking.
 
 ```{r neighbor-summary}
 res <- analyze_neighbors(fov_final, radius = 20,
@@ -213,10 +213,10 @@ head(res$fov_summary)
 head(res$nearest_rank)
 ```
 
-### 3. 加入分组并比较
+### 3. Add group labels and compare groups
 
-FOV 汇总用于复现原始图形。正式组间检验先汇总到独立样本层级，避免把同一
-样本的多个 FOV 当作独立生物学重复：
+Use FOV summaries to visualise local variation. For sample-level inference,
+aggregate by biological sample to account for the dependence among FOVs from the same sample.
 
 ```{r group-compare}
 data(mif_groups)
@@ -227,27 +227,27 @@ compare_groups(sample_grouped, value_col = "mean_prop",
                group_col = "Group", by = "CellType")
 ```
 
-也可用统一接口明确选择统计层级与方法：
+Specify the analysis level and statistical method explicitly.
 
 ```{r comparison-levels, eval=FALSE}
 fov_grouped <- add_groups(res$fov_summary, groups, sample_col = "Sample")
 
-# 正式样本层面比较
+# Sample-level comparison
 compare_neighbor_groups(fov_grouped, "sample", "sample_wilcox")
 
-# 复现原流程；未校正同一样本内FOV相关性
+# Exploratory FOV-level comparison without accounting for within-sample dependence
 compare_neighbor_groups(fov_grouped, "FOV", "fov_wilcox")
 
-# 推荐的FOV输入分析；R/NR标签只在完整样本之间置换
+# Permute group labels across whole samples, retaining their FOVs together
 compare_neighbor_groups(fov_grouped, "FOV", "cluster_permutation")
 ```
 
-`cluster_permutation` 保持一个样本的全部 FOV 一起移动，并给予每个生物
-样本相同权重。它要求样本在零假设下可交换；观察性 R/NR 分组结果不能直接
-解释为因果效应。函数输出的 `method_label`、`analysis_level` 和
-`permutation_unit` 可直接用于图片副标题或图注。
+`cluster_permutation` keeps the FOVs of each sample together and gives each
+biological sample equal weight. It assumes samples are exchangeable under the null.
+Use the returned `method_label`, `analysis_level`, and `permutation_unit`
+fields to report the analysis and permutation units in figure captions.
 
-### 4. 分组比较图
+### 4. Plot group comparisons
 
 ```{r group-plot}
 plot_group_comparison(grouped, value_col = "mean_prop",
@@ -255,12 +255,12 @@ plot_group_comparison(grouped, value_col = "mean_prop",
                       palette = c(R = "#E64B35", NR = "#4DBBD5"))
 ```
 
-图中保持原脚本的小提琴、白色箱线、IQR 过滤、NPG 红蓝配色与 Wilcoxon
-p 值格式。全为相同数值而无法定义检验的分面保留，但不显示伪造的 p 值。
+The figure reproduces the original violin and white boxplot styling, IQR filtering,
+red and blue NPG palette, and Wilcoxon p-value labels. Facets with undefined p-values are retained without a p-value label.
 
-### 5. 环形邻居雷达图
+### 5. Plot a circular radar chart
 
-环形雷达图展示不同组在各邻居细胞类型上的平均比例。圆环和组线颜色均可指定：
+The radar chart shows group means for the proportions of neighbouring cell types. The ring and group line colours are configurable.
 
 ```{r ring-radar}
 plot_neighbor_ring_radar(
@@ -274,19 +274,19 @@ plot_neighbor_ring_radar(
 )
 ```
 
-`ring_colors` 也可以是以细胞类型命名的颜色向量，从而为每个圆环分区
-设置不同颜色。`category_order` 控制圆周顺序，`category_labels` 可在不修改
-原始规则标签的情况下设置换行或显示名称。
+Supply a colour vector named by cell type to `ring_colors` to colour ring segments individually.
+Use `category_order` to set their order and `category_labels` to customise
+display labels or line breaks while retaining the original rule labels.
 
-## 三个阶段的完整流程
+## Complete three-phase workflow
 
 ```{r full, eval = FALSE}
-# Phase 1: 注释
+# Phase 1: Cell phenotyping
 annotated <- run_annotation(cells, cutoffs, rules, marker_map, regions = ...)
-# Phase 2: FOV 栅格化 + 质控清洗
+# Phase 2: FOV grid assignment and quality control
 qc_result <- run_fov_qc(annotated)
 clean <- qc_result$data_final
-# Phase 3: 邻居分析 + 分组比较
+# Phase 3: Neighbourhood analysis and group comparison
 res <- analyze_neighbors(clean, radius = 20, center_types = ...)
 grouped <- add_groups(res$fov_summary, groups, sample_col = "Sample")
 plot_group_comparison(grouped, value_col = "mean_prop",

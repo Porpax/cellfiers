@@ -1,22 +1,22 @@
-# 安装 cellfiers
+# Install cellfiers
 
-[首页](../README.md) · [快速入门](quickstart.md) · [函数参考](reference.md)
+[Home](../README.md) · [Quick start](quickstart.md) · [Function reference](reference.md)
 
-## R 与依赖
+## R version and dependencies
 
-包声明需要 **R ≥ 4.1**。第三方运行时依赖均来自 CRAN。
+cellfiers requires **R ≥ 4.1**. All third-party runtime dependencies are available from CRAN.
 
-| 用途 | R 包 |
+| Purpose | R packages |
 | --- | --- |
-| 数据读取、整理与列操作 | `readr`, `dplyr`, `tidyr`, `stringr`, `rlang` |
-| 半径邻居搜索 | `RANN` |
-| 可视化 | `ggplot2`, `ggpubr`, `ggthemes`, `ggnewscale`, `scales`, `scatterpie`, `viridis`, `fmsb` |
-| R 自带 | `graphics`, `grDevices`, `stats`, `utils` |
-| 从 GitHub 安装 | `remotes` |
-| 构建教程及运行测试 | `knitr`, `rmarkdown`, `testthat`（≥ 3.0.0） |
-| 修改源码后重新生成帮助 | `roxygen2`（维护者工具） |
+| Data import and manipulation | `readr`, `dplyr`, `tidyr`, `stringr`, `rlang` |
+| Radius-based neighbour search | `RANN` |
+| Visualisation | `ggplot2`, `ggpubr`, `ggthemes`, `ggnewscale`, `scales`, `scatterpie`, `viridis`, `fmsb` |
+| Included with R | `graphics`, `grDevices`, `stats`, `utils` |
+| Installation from GitHub | `remotes` |
+| Building vignettes and running tests | `knitr`, `rmarkdown`, `testthat` (≥ 3.0.0) |
+| Regenerating R help files | `roxygen2` (for maintainers) |
 
-安装包时会解析运行依赖。需要手动预装时，可以运行：
+The installer resolves runtime dependencies. To install them separately, run the following commands.
 
 ```r
 install.packages(c(
@@ -26,11 +26,11 @@ install.packages(c(
 ))
 ```
 
-部分依赖的新版可能要求更高的 R 版本。Windows 从源码编译依赖时，可能需要与 R 版本匹配的 Rtools。
+Recent versions of some dependencies may require a newer version of R. On Windows, compiling dependencies from source may require the version of Rtools that corresponds to your R installation.
 
-## 从 GitHub 安装
+## Install from GitHub
 
-在 R 中运行以下命令，从 GitHub 安装 cellfiers。
+Run the following commands in R.
 
 ```r
 install.packages("remotes")
@@ -39,7 +39,7 @@ library(cellfiers)
 packageVersion("cellfiers")
 ```
 
-也可以在 RStudio 中安装本地源码：
+To install from a local copy of the source package, run the following commands in R or RStudio.
 
 ```r
 install.packages("remotes")
@@ -50,4 +50,4 @@ library(cellfiers)
 help("target_neighbors", package = "cellfiers")
 ```
 
-接下来用[包内模拟数据跑完整流程](quickstart.md)。
+Next, follow the [quick start with bundled simulated data](quickstart.md).
