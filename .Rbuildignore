@@ -1,0 +1,9 @@
+^data-raw$
+^\.Rproj\.user$
+^cellfiers\.Rproj$
+^\.git$
+^\.gitignore$
+^doc$
+^docs$
+^LICENSE$
+^Meta$

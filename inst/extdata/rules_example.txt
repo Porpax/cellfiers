@@ -1,0 +1,11 @@
+CellType	CD11c	CD3	CD8	PDL1	CD45RA	CD69
+cDC	+	-	-	-	NA	NA
+cDC(Mature/Active)	+	-	-	+	NA	NA
+CD8Tn(Quiescent)	-	+	+	NA	+	-
+CD8Tn(Primed)	-	+	+	NA	+	+
+CD8Teff(Resting)	-	+	+	NA	-	-
+CD8Teff(Active)	-	+	+	NA	-	+
+CD4Tn(Quiescent)	-	+	-	NA	+	-
+CD4Tn(Primed)	-	+	-	NA	+	+
+CD4Teff(Resting)	-	+	-	NA	-	-
+CD4Teff(Active)	-	+	-	NA	-	+

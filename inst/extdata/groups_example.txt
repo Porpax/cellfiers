@@ -1,0 +1,4 @@
+Sample	Group
+C1001	R
+C1002	NR
+C1003	R

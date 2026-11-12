@@ -1,0 +1,41 @@
+Package: cellfiers
+Type: Package
+Title: Cell Phenotyping and Spatial Analysis for Multiplex Imaging
+Version: 0.2.0
+Authors@R: person(given = "Zihan",family = "Chen",email = "Porpax.chen@outlook.com",role = c("aut", "cre"))
+Description: Imports single-cell measurements exported by 'QuPath', applies
+    sample-specific marker thresholds and user-defined phenotyping rules, and
+    supports user-selected region filtering, field-of-view rasterisation,
+    quality control, arbitrary centre-target radius neighbourhood analysis,
+    shared-target weighting, group comparisons, and heat-pie visualisation of
+    multiplex immunofluorescence imaging data.
+License: CC BY 4.0
+Encoding: UTF-8
+Depends: R (>= 4.1)
+biocViews: ImmunoOncology, Spatial, DataImport, CellBasedAssays
+Imports:
+    dplyr,
+    fmsb,
+    ggpubr,
+    ggthemes,
+    ggplot2,
+    ggnewscale,
+    graphics,
+    grDevices,
+    RANN,
+    readr,
+    rlang,
+    scales,
+    scatterpie,
+    stats,
+    stringr,
+    tidyr,
+    utils,
+    viridis
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+RoxygenNote: 7.3.3
